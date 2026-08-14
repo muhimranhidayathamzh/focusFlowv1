@@ -1,23 +1,65 @@
 # FocusFlow
 
-FocusFlow is a personal Pomodoro web app designed to improve productivity and work focus. It combines the classic Pomodoro technique with task management, ambient sound, and session statistics.
+FocusFlow adalah aplikasi produktivitas pribadi berbasis Pomodoro dengan task,
+Focus Guard, Browser Guard, distraction capture, session review, statistik, dan
+focus sound.
 
-## Features
-- Pomodoro Timer (25m Focus, 5m Short Break, 15m Long Break)
-- Custom durations
-- Task Management
-- Google OAuth via Supabase
-- Minimalist UI
+## Fitur utama
 
-## Tech Stack
-- Next.js 14
-- TypeScript
-- Tailwind CSS
-- Supabase
+- Reliable Pomodoro timer dengan recovery setelah refresh/sleep.
+- Task, checklist langkah kecil, dan active focus target.
+- Opt-in Focus Contract dan protected focus session.
+- Browser Guard extension untuk block/allow website secara session-scoped.
+- Attention awareness tanpa membaca URL, layar, clipboard, atau keystroke.
+- Quick Capture dan Distraction Inbox.
+- Session Review dan insight tujuh hari.
+- Ambient sound dan keyboard shortcuts.
+- Seluruh data tersimpan lokal dengan retention/resource limits.
 
-## Getting Started
+## Menjalankan aplikasi
 
-1. Clone the repository
-2. Run `npm install`
-3. Copy `.env.example` to `.env.local` and add your Supabase credentials
-4. Run `npm run dev` to start the development server
+```powershell
+npm install
+npm run build
+npm run start
+```
+
+Buka `http://localhost:3000`.
+
+Untuk development gunakan `npm run dev`. Browser extension hanya mendukung
+origin development pada port 3000.
+
+## Browser Guard extension
+
+```powershell
+npm run extension:build
+npm run extension:check
+```
+
+Buka `chrome://extensions` atau `edge://extensions`, aktifkan Developer mode,
+lalu **Load unpacked** dari folder `extension/dist`.
+
+## Dokumentasi
+
+- [Panduan penggunaan](docs/USER_GUIDE.md)
+- [Panduan extension dan QA](extension/README.md)
+- [Audit efisiensi resource](docs/focus-guard/RESOURCE_EFFICIENCY_AUDIT.md)
+- [Focus Guard master blueprint](docs/FOCUS_GUARD_MASTER_BLUEPRINT.md)
+
+## Verifikasi
+
+```powershell
+npm run lint
+npx tsc --noEmit
+npm run build
+npm run extension:build
+npm run extension:check
+npm run verify:focus-guard-phase6
+npm run verify:focus-guard-phase7
+npm run verify:focus-guard-phase8
+npm run verify:focus-guard-phase9
+npm run verify:resource-bounds
+```
+
+Project menggunakan Next.js 14, React, TypeScript, Tailwind CSS, dan Chromium
+Manifest V3. Versi saat ini tidak memakai akun atau cloud sync.

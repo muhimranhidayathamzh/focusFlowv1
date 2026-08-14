@@ -9,6 +9,16 @@
 
 ---
 
+> [!IMPORTANT]
+> Dokumen ini adalah PRD awal dan dipertahankan sebagai arsip perencanaan.
+> Beberapa bagian, terutama Supabase, autentikasi, dan cloud sync, tidak
+> merepresentasikan implementasi saat ini. Lihat [README](../README.md),
+> [panduan pengguna](USER_GUIDE.md), dan
+> [Focus Guard blueprint](FOCUS_GUARD_MASTER_BLUEPRINT.md) sebagai sumber
+> kebenaran versi sekarang.
+
+---
+
 ## 1. Overview
 
 ### 1.1 Latar Belakang
