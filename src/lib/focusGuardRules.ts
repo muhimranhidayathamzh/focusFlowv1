@@ -6,7 +6,12 @@ export interface RuleValidationResult {
   error?: string;
 }
 
-const BLOCKED_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
+const BLOCKED_HOSTS = new Set([
+  'localhost',
+  '127.0.0.1',
+  '::1',
+  'focusflow-fawn-ten.vercel.app',
+]);
 
 export function normalizeGuardDomain(value: string) {
   let domain = value.trim().toLowerCase();

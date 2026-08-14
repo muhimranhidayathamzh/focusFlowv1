@@ -10,6 +10,11 @@ export const FOCUS_GUARD_EXTENSION_EXPIRY_MS = 35_000;
 export const FOCUS_GUARD_EXTENSION_MAX_ENVELOPE_BYTES = 32 * 1024;
 
 const MAX_RULES = 100;
+const ALLOWED_FOCUSFLOW_ORIGINS = new Set([
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'https://focusflow-fawn-ten.vercel.app',
+]);
 
 export const FOCUS_GUARD_EXTENSION_MESSAGES = {
   ping: 'FOCUSFLOW_BRIDGE_PING',
@@ -212,10 +217,7 @@ export function createSanitizedFocusGuardSnapshot(
   const normalizedOrigin = (() => {
     try {
       const origin = new URL(focusFlowOrigin).origin;
-      return origin === 'http://localhost:3000' ||
-        origin === 'http://127.0.0.1:3000'
-        ? origin
-        : null;
+      return ALLOWED_FOCUSFLOW_ORIGINS.has(origin) ? origin : null;
     } catch {
       return null;
     }

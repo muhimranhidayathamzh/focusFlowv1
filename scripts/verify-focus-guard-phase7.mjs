@@ -265,6 +265,22 @@ const normalized = protocol.normalizeSessionSnapshot(snapshot, now);
 assert.equal(normalized.ok, true);
 assert.deepEqual(normalized.snapshot, snapshot);
 
+const productionSnapshot = webBridge.createSanitizedFocusGuardSnapshot(
+  baseGuardSession,
+  now,
+  'https://focusflow-fawn-ten.vercel.app/'
+);
+assert.equal(productionSnapshot?.focusFlowOrigin, 'https://focusflow-fawn-ten.vercel.app');
+assert.equal(protocol.normalizeSessionSnapshot(productionSnapshot, now).ok, true);
+assert.equal(
+  webBridge.createSanitizedFocusGuardSnapshot(
+    baseGuardSession,
+    now,
+    'https://focusflow-fawn-ten.vercel.app.attacker.example'
+  ),
+  null
+);
+
 let storedSnapshot = null;
 const storage = {
   async get() {
@@ -285,7 +301,7 @@ const handler = sessionStore.createMessageHandler({
   },
   eventQueue: { async drain() { return []; }, async ack() { return 0; } },
   now: () => now,
-  extensionVersion: '0.3.0',
+  extensionVersion: '0.3.1',
 });
 const request = (type, payload = {}, requestId = `request-${type}`) =>
   protocol.createEnvelope(type, requestId, payload, now);
@@ -314,7 +330,7 @@ const restartedHandler = sessionStore.createMessageHandler({
   },
   eventQueue: { async drain() { return []; }, async ack() { return 0; } },
   now: () => now,
-  extensionVersion: '0.3.0',
+  extensionVersion: '0.3.1',
 });
 const statusAfterWorkerRestart = await restartedHandler(
   request(protocol.MESSAGE_TYPES.STATUS_REQUEST, {}, 'worker-restart')

@@ -4,7 +4,7 @@
   const CHANNEL = 'focusflow-extension-bridge';
   const PROTOCOL_VERSION = 3;
   const SNAPSHOT_SCHEMA_VERSION = 3;
-  const EXTENSION_VERSION = '0.3.0';
+  const EXTENSION_VERSION = '0.3.1';
   const SESSION_STORAGE_KEY = 'focusflow-active-protected-session-v3';
   const CONFIG_STORAGE_KEY = 'focusflow-selected-profile-config-v1';
   const MAX_ENVELOPE_BYTES = 32 * 1024;
@@ -12,6 +12,7 @@
   const ALLOWED_FOCUSFLOW_ORIGINS = new Set([
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'https://focusflow-fawn-ten.vercel.app',
   ]);
 
   const MESSAGE_TYPES = Object.freeze({
@@ -192,7 +193,8 @@
     for (const rawOrigin of value.requiredOrigins) {
       const origin = normalizeString(rawOrigin, 300, false);
       if (!origin || !/^(?:https?|\*):\/\/(?:\*\.)?[a-z0-9.-]+\/\*$/.test(origin) ||
-        origin.includes('localhost') || origin.includes('127.0.0.1') || seenOrigins.has(origin)) {
+        origin.includes('localhost') || origin.includes('127.0.0.1') ||
+        origin.includes('focusflow-fawn-ten.vercel.app') || seenOrigins.has(origin)) {
         return { ok: false, code: 'INVALID_PAYLOAD', message: 'Required origins are invalid.' };
       }
       seenOrigins.add(origin);

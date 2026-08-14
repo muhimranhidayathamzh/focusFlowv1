@@ -7,6 +7,7 @@
   const allowedOrigins = new Set([
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'https://focusflow-fawn-ten.vercel.app',
   ]);
   const pageOrigin = window.location.origin;
   if (!allowedOrigins.has(pageOrigin)) return;

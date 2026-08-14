@@ -6,12 +6,18 @@
   const BYPASS_RULE_MIN = 200000;
   const BYPASS_RULE_MAX = 299999;
   const BYPASS_PRIORITY = 10000000;
+  const PROTECTED_FOCUSFLOW_HOSTS = new Set([
+    'localhost',
+    '127.0.0.1',
+    '::1',
+    'focusflow-fawn-ten.vercel.app',
+  ]);
 
   function normalizeDomain(value) {
     if (typeof value !== 'string') return null;
     let domain = value.trim().toLowerCase();
     while (domain.endsWith('.')) domain = domain.slice(0, -1);
-    if (!domain || domain.length > 253 || domain.includes('/') || domain.includes(':') || ['localhost', '127.0.0.1', '::1'].includes(domain)) return null;
+    if (!domain || domain.length > 253 || domain.includes('/') || domain.includes(':') || PROTECTED_FOCUSFLOW_HOSTS.has(domain)) return null;
     const labels = domain.split('.');
     if (labels.length < 2 || labels.some((label) => !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label))) return null;
     return domain;

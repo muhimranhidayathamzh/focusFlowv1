@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "FocusFlow Browser Guard",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Session-scoped website protection for FocusFlow Browser Guard.",
   "permissions": ["storage", "declarativeNetRequest", "alarms"],
   "optional_host_permissions": [
@@ -19,7 +19,8 @@
     {
       "matches": [
         "http://localhost:3000/*",
-        "http://127.0.0.1:3000/*"
+        "http://127.0.0.1:3000/*",
+        "https://focusflow-fawn-ten.vercel.app/*"
       ],
       "js": [
         "src/shared/protocol.js",

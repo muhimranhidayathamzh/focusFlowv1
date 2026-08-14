@@ -11,6 +11,7 @@ const manifest = JSON.parse(
 const allowedMatches = [
   'http://localhost:3000/*',
   'http://127.0.0.1:3000/*',
+  'https://focusflow-fawn-ten.vercel.app/*',
 ];
 const forbiddenPermissions = new Set([
   'tabs',
@@ -82,4 +83,4 @@ assert.equal(
   manifest.version
 );
 
-console.log('Extension check passed: MV3 minimum permissions, optional HTTP/HTTPS host declaration, two dev origins, and all scripts parse.');
+console.log('Extension check passed: MV3 minimum permissions, exact FocusFlow app origins, optional HTTP/HTTPS rule permissions, and all scripts parse.');

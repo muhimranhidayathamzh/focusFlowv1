@@ -24,7 +24,9 @@ npm run build
 npm run start
 ```
 
-Buka `http://localhost:3000`.
+Buka deployment produksi di
+[focusflow-fawn-ten.vercel.app](https://focusflow-fawn-ten.vercel.app/) atau
+`http://localhost:3000` untuk penggunaan lokal.
 
 Untuk development gunakan `npm run dev`. Browser extension hanya mendukung
 origin development pada port 3000.
@@ -37,7 +39,8 @@ npm run extension:check
 ```
 
 Buka `chrome://extensions` atau `edge://extensions`, aktifkan Developer mode,
-lalu **Load unpacked** dari folder `extension/dist`.
+lalu **Load unpacked** dari folder `extension/dist`. Extension mendukung exact
+origin deployment produksi di atas serta dua origin development port 3000.
 
 ## Dokumentasi
 

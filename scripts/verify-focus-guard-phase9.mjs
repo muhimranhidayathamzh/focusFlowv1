@@ -37,6 +37,8 @@ assert.deepEqual(rules.deriveRuleOrigins([shortsRule]), ['http://*.youtube.com/*
 assert.equal(rules.normalizeWebsiteRuleSet([shortsRule, { ...shortsRule, id: 'duplicate', action: 'allow' }]).ok, false);
 assert.equal(rules.validateWebsiteRule({ ...shortsRule, pattern: 'regex:(.*)' }).ok, false);
 assert.equal(rules.validateWebsiteRule({ id: 'local', action: 'block', matchType: 'url-prefix', pattern: 'http://localhost:3000/private' }).ok, false);
+assert.equal(rules.validateWebsiteRule({ id: 'app-domain', action: 'block', matchType: 'domain', pattern: 'focusflow-fawn-ten.vercel.app' }).ok, false);
+assert.equal(rules.validateWebsiteRule({ id: 'app-prefix', action: 'block', matchType: 'url-prefix', pattern: 'https://focusflow-fawn-ten.vercel.app/private' }).ok, false);
 
 const memory = new Map();
 globalThis.localStorage = {
