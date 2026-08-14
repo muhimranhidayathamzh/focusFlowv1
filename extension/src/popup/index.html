@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>FocusFlow Browser Guard</title><link rel="stylesheet" href="popup.css"></head>
+<body><main><p class="eyebrow">FocusFlow</p><h1>Browser Guard</h1><p class="copy">Izin diminta hanya untuk origin yang dibutuhkan profile terpilih. Menyimpan profile tidak mengaktifkan blocking.</p>
+<section><h2>Profile</h2><p id="selected-profile">Belum tersinkron</p><p id="active-profile" class="muted">Tidak ada sesi aktif</p></section>
+<section aria-labelledby="origins-title"><h2 id="origins-title">Required origins</h2><ul id="origins"><li>Belum ada origin.</li></ul><p id="status" role="status">Memeriksa status…</p></section>
+<div class="actions"><button id="grant" type="button">Izinkan origin yang belum tersedia</button><button id="revoke" class="secondary" type="button">Cabut izin profile</button></div>
+<section><h2>Runtime</h2><p><span id="rule-count">0</span> DNR rule aktif</p><p><span id="bypass-count">0</span> bypass aktif</p></section>
+<button id="recovery" class="danger" type="button">Bersihkan proteksi lokal</button>
+<p class="privacy">Tidak ada history, isi halaman, atau URL lengkap yang dikumpulkan. Deny/revoke tidak menghentikan timer.</p></main><script src="popup.js"></script></body></html>
