@@ -8,6 +8,11 @@ untuk nanti, lalu tinjau hasil sesi.
 
 ### Penggunaan harian yang direkomendasikan
 
+Buka [FocusFlow production](https://focusflow-fawn-ten.vercel.app/) langsung
+dari bookmark. Tidak diperlukan terminal untuk penggunaan melalui deployment.
+
+### Menjalankan secara lokal
+
 Dari folder project:
 
 ```powershell
@@ -21,9 +26,9 @@ Buka `http://localhost:3000`.
 Gunakan `npm run dev` hanya ketika sedang mengubah kode. Mode development
 memakai resource lebih banyak karena menyediakan hot reload dan debugging.
 
-> Browser Guard hanya mengenali `localhost:3000` dan
-> `127.0.0.1:3000`. Jika terminal berpindah ke port 3001, hentikan proses yang
-> memakai port 3000 terlebih dahulu.
+> Browser Guard mengenali exact production origin di atas, `localhost:3000`,
+> dan `127.0.0.1:3000`. Jika local development berpindah ke port 3001,
+> hentikan proses yang memakai port 3000 terlebih dahulu.
 
 ## 2. Memasang Browser Guard
 

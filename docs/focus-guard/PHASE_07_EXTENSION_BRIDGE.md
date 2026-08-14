@@ -1,5 +1,9 @@
 # Phase 7 — Browser Extension Communication Proof
 
+> Production-origin addendum (extension 0.3.1): the exact origin
+> `https://focusflow-fawn-ten.vercel.app` is allowlisted alongside the two
+> original development origins. Protocol and snapshot schema remain version 3.
+
 Status: accepted. The user confirmed unpacked-extension connection, sync,
 pause/resume, clear, reconnect, and stale-state behavior on 2026-07-13.
 

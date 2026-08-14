@@ -16,7 +16,7 @@ npm run verify:focus-guard-phase9
 
 Load `extension/dist`, not `extension/src`. Next.js does not bundle the extension. After edits, rebuild, click **Reload** on the extension card, and reload FocusFlow so page/content/worker all use protocol v3.
 
-Chrome: open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select `extension/dist`. Edge uses the same process at `edge://extensions`. Open `http://localhost:3000` or `http://127.0.0.1:3000` and confirm `Extension terhubung`.
+Chrome: open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select `extension/dist`. Edge uses the same process at `edge://extensions`. Open `https://focusflow-fawn-ten.vercel.app`, `http://localhost:3000`, or `http://127.0.0.1:3000` and confirm `Extension terhubung`.
 
 ## Permission model
 
@@ -94,6 +94,6 @@ Record browser/version, origins tested, and any skipped step. Code/harness succe
 
 ## Development origins and uninstall
 
-The content script only runs on the two port-3000 origins. To use another development origin, add that exact origin to the manifest content-script matches and the content bridge allowlist, then rebuild/reload; never add required `<all_urls>`.
+The content script only runs on the exact production origin and the two port-3000 development origins. To use another origin, add that exact origin to the manifest content-script matches and both bridge allowlists, then rebuild/reload; never add required `<all_urls>`.
 
 To uninstall, choose **Remove** on `chrome://extensions` or `edge://extensions`. Extension permissions and temporary state are removed; FocusFlow website data remains local and its timer continues without the extension.

@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Added exact production-origin support for `focusflow-fawn-ten.vercel.app` in Browser Guard 0.3.1.
 - Reliable wall-clock Pomodoro timer with refresh, sleep, overdue, and multi-tab recovery.
 - Task steps, active focus targets, daily goals, streaks, session history, and seven-day statistics.
 - Opt-in Focus Contract and protected Focus Guard session lifecycle.
