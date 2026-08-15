@@ -3,10 +3,12 @@ const params = new URLSearchParams(location.search);
 const ruleToken = params.get('rule') || '';
 const attemptId = history.state?.focusflowAttemptId || crypto.randomUUID();
 history.replaceState({ focusflowAttemptId: attemptId }, '');
-const ui = Object.fromEntries(['summary','details','target','profile','domain','remaining','return','bypass-section','start-bypass','bypass-form','reason','countdown','submit-bypass','bypass-status','open-domain'].map((id) => [id.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), document.getElementById(id)]));
+const ui = Object.fromEntries(['summary','details','target','profile','domain','remaining','return','capture-section','capture-form','capture-text','capture-count','capture-submit','capture-status','bypass-section','start-bypass','bypass-form','reason','countdown','submit-bypass','bypass-status','open-domain'].map((id) => [id.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), document.getElementById(id)]));
 let context = null;
 let challenge = null;
 let countdownTimer = null;
+let captureDraftId = `extension-distraction-${crypto.randomUUID()}`;
+let captureSubmitting = false;
 function remainingLabel(expectedEndAt) {
   const seconds = Math.max(0, Math.ceil((expectedEndAt - Date.now()) / 1000));
   return `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, '0')}d`;
@@ -26,10 +28,45 @@ async function initialize() {
   ui.domain.textContent = `${context.rule.label} (${context.rule.domain})`;
   ui.remaining.textContent = remainingLabel(context.expectedEndAt);
   ui.return.dataset.origin = context.focusFlowOrigin;
+  ui.captureSection.hidden = false;
   ui.bypassSection.hidden = !context.bypass.allowed;
   setInterval(() => { ui.remaining.textContent = remainingLabel(context.expectedEndAt); }, 1000);
 }
 ui.return.addEventListener('click', () => location.assign(ui.return.dataset.origin || 'http://localhost:3000'));
+ui.captureText.addEventListener('input', () => {
+  ui.captureCount.textContent = `${ui.captureText.value.length}/300`;
+});
+ui.captureForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (captureSubmitting) return;
+  const text = ui.captureText.value.trim();
+  if (!text) {
+    ui.captureStatus.textContent = 'Tulis sesuatu sebelum menyimpan.';
+    return;
+  }
+  captureSubmitting = true;
+  ui.captureSubmit.disabled = true;
+  let response = null;
+  try {
+    response = await chrome.runtime.sendMessage({
+      internalType: 'FOCUSFLOW_CAPTURE_ADD',
+      captureId: captureDraftId,
+      text,
+    });
+  } catch {
+    response = null;
+  }
+  captureSubmitting = false;
+  ui.captureSubmit.disabled = false;
+  if (!response?.ok) {
+    ui.captureStatus.textContent = response?.error || 'Capture gagal disimpan.';
+    return;
+  }
+  ui.captureText.value = '';
+  captureDraftId = `extension-distraction-${crypto.randomUUID()}`;
+  ui.captureCount.textContent = '0/300';
+  ui.captureStatus.textContent = 'Tersimpan. Kembali ke targetmu.';
+});
 ui.startBypass.addEventListener('click', async () => {
   const response = await chrome.runtime.sendMessage({ internalType: 'FOCUSFLOW_BYPASS_PREPARE', ruleToken, guardSessionId: context.guardSessionId });
   if (!response?.ok) { ui.bypassStatus.textContent = response?.error || 'Bypass tidak tersedia.'; return; }

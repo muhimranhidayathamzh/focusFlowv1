@@ -5,6 +5,7 @@ main { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
 .card { width: min(100%, 620px); padding: clamp(24px, 6vw, 48px); border: 1px solid #3f3f46; border-radius: 28px; background: rgba(24,24,27,.94); box-shadow: 0 28px 80px rgba(0,0,0,.38); }
 .brand { margin: 0 0 10px; color: #a5b4fc; font-size: 12px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
 h1 { margin: 0; font-size: clamp(28px, 6vw, 44px); line-height: 1.08; }
+h2 { margin: 0; font-size: 15px; }
 .lead, .privacy, .bypass-content p { color: #a1a1aa; line-height: 1.6; }
 dl { margin: 26px 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 dl div { padding: 14px; border: 1px solid #3f3f46; border-radius: 14px; background: #09090b66; }
@@ -24,5 +25,9 @@ label { font-size: 12px; font-weight: 700; }
 textarea { width: 100%; resize: vertical; border: 1px solid #52525b; border-radius: 10px; padding: 10px; background: #09090b; color: white; font: inherit; }
 #open-domain { margin-top: 10px; color: #c7d2fe; }
 .privacy { margin: 20px 0 0; font-size: 11px; }
+.capture-section { margin-top: 18px; border-top: 1px solid #3f3f46; padding-top: 18px; }
+.capture-section > p { margin: 6px 0 12px; color: #a1a1aa; font-size: 12px; }
+.capture-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #71717a; font-size: 11px; }
+#capture-status { min-height: 18px; margin: 8px 0 0; color: #a7f3d0; font-size: 11px; }
 @media (max-width: 520px) { main { padding: 12px; } .card { border-radius: 20px; } dl { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }

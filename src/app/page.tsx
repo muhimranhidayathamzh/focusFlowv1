@@ -6,6 +6,7 @@ import AmbientSoundPanel from '@/components/ambient/AmbientSoundPanel';
 import KeyboardShortcutHint from '@/components/layout/KeyboardShortcutHint';
 import DistractionInboxPanel from '@/components/guard/DistractionInboxPanel';
 import FocusGuardInsightsPanel from '@/components/stats/FocusGuardInsightsPanel';
+import { AmbientSoundProvider } from '@/components/ambient/AmbientSoundProvider';
 
 export default function Home() {
   return (
@@ -30,22 +31,24 @@ export default function Home() {
           </p>
         </header>
 
-        <section
-          aria-label="Workspace fokus"
-          className="grid items-start gap-5 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-7 xl:gap-8"
-        >
-          <div className="timer-sticky-shell min-w-0">
-            <PomodoroTimer />
-          </div>
+        <AmbientSoundProvider>
+          <section
+            aria-label="Workspace fokus"
+            className="grid items-start gap-5 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-7 xl:gap-8"
+          >
+            <div className="timer-sticky-shell min-w-0">
+              <PomodoroTimer />
+            </div>
 
-          <div className="min-w-0 space-y-5">
-            <TaskList />
-            <FocusStatsPanel />
-            <DistractionInboxPanel />
-            <AmbientSoundPanel />
-            <FocusGuardInsightsPanel />
-          </div>
-        </section>
+            <div className="min-w-0 space-y-5">
+              <TaskList />
+              <FocusStatsPanel />
+              <DistractionInboxPanel />
+              <AmbientSoundPanel />
+              <FocusGuardInsightsPanel />
+            </div>
+          </section>
+        </AmbientSoundProvider>
       </div>
 
       <KeyboardShortcutHint />

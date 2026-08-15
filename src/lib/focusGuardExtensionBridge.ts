@@ -2,12 +2,16 @@ import type { FocusGuardProfile, FocusGuardSession, WebsiteRule } from '@/types/
 import { deriveRuleOrigins, normalizeWebsiteRuleSet } from '@/lib/focusGuardRules';
 
 export const FOCUS_GUARD_EXTENSION_CHANNEL = 'focusflow-extension-bridge';
-export const FOCUS_GUARD_EXTENSION_PROTOCOL_VERSION = 3;
+export const FOCUS_GUARD_EXTENSION_PROTOCOL_VERSION = 4;
 export const FOCUS_GUARD_EXTENSION_SNAPSHOT_SCHEMA_VERSION = 3;
 export const FOCUS_GUARD_EXTENSION_HEARTBEAT_MS = 12_000;
 export const FOCUS_GUARD_EXTENSION_IDLE_EVENT_DRAIN_MS = 60_000;
 export const FOCUS_GUARD_EXTENSION_EXPIRY_MS = 35_000;
 export const FOCUS_GUARD_EXTENSION_MAX_ENVELOPE_BYTES = 32 * 1024;
+export const FOCUS_GUARD_EXTENSION_MAX_CAPTURE_ITEMS = 50;
+export const FOCUS_GUARD_EXTENSION_MAX_CAPTURE_TEXT_LENGTH = 300;
+export const FOCUS_GUARD_EXTENSION_CAPTURE_TTL_MS =
+  7 * 24 * 60 * 60 * 1000;
 
 const MAX_RULES = 100;
 const ALLOWED_FOCUSFLOW_ORIGINS = new Set([
@@ -24,6 +28,8 @@ export const FOCUS_GUARD_EXTENSION_MESSAGES = {
   eventDrain: 'FOCUSFLOW_EVENT_DRAIN',
   eventAckRequest: 'FOCUSFLOW_EVENT_ACK',
   configSync: 'FOCUSFLOW_CONFIG_SYNC',
+  captureDrain: 'FOCUSFLOW_CAPTURE_DRAIN',
+  captureAckRequest: 'FOCUSFLOW_CAPTURE_ACK',
   ready: 'FOCUSFLOW_BRIDGE_READY',
   pong: 'FOCUSFLOW_BRIDGE_PONG',
   sessionAck: 'FOCUSFLOW_SESSION_ACK',
@@ -31,6 +37,8 @@ export const FOCUS_GUARD_EXTENSION_MESSAGES = {
   eventBatch: 'FOCUSFLOW_EVENT_BATCH',
   eventAckResponse: 'FOCUSFLOW_EVENT_ACKNOWLEDGED',
   configAck: 'FOCUSFLOW_CONFIG_ACK',
+  captureBatch: 'FOCUSFLOW_CAPTURE_BATCH',
+  captureAckResponse: 'FOCUSFLOW_CAPTURE_ACKNOWLEDGED',
   error: 'FOCUSFLOW_BRIDGE_ERROR',
 } as const;
 
@@ -41,7 +49,9 @@ export type FocusGuardExtensionRequestType =
   | typeof FOCUS_GUARD_EXTENSION_MESSAGES.statusRequest
   | typeof FOCUS_GUARD_EXTENSION_MESSAGES.eventDrain
   | typeof FOCUS_GUARD_EXTENSION_MESSAGES.eventAckRequest
-  | typeof FOCUS_GUARD_EXTENSION_MESSAGES.configSync;
+  | typeof FOCUS_GUARD_EXTENSION_MESSAGES.configSync
+  | typeof FOCUS_GUARD_EXTENSION_MESSAGES.captureDrain
+  | typeof FOCUS_GUARD_EXTENSION_MESSAGES.captureAckRequest;
 
 export type FocusGuardExtensionResponseType =
   | typeof FOCUS_GUARD_EXTENSION_MESSAGES.ready
@@ -51,7 +61,16 @@ export type FocusGuardExtensionResponseType =
   | typeof FOCUS_GUARD_EXTENSION_MESSAGES.eventBatch
   | typeof FOCUS_GUARD_EXTENSION_MESSAGES.eventAckResponse
   | typeof FOCUS_GUARD_EXTENSION_MESSAGES.configAck
+  | typeof FOCUS_GUARD_EXTENSION_MESSAGES.captureBatch
+  | typeof FOCUS_GUARD_EXTENSION_MESSAGES.captureAckResponse
   | typeof FOCUS_GUARD_EXTENSION_MESSAGES.error;
+
+export interface FocusGuardExtensionQueuedCapture {
+  id: string;
+  text: string;
+  capturedAt: number;
+  guardSessionId?: string;
+}
 
 export interface FocusGuardExtensionWebsiteRule {
   id: string;
@@ -89,7 +108,7 @@ export interface FocusGuardExtensionSessionSnapshot {
 
 export interface FocusGuardExtensionEnvelope<TType extends string = string> {
   channel: typeof FOCUS_GUARD_EXTENSION_CHANNEL;
-  protocolVersion: 3;
+  protocolVersion: 4;
   type: TType;
   requestId: string;
   payload: Record<string, unknown>;
@@ -122,6 +141,35 @@ function serializedSize(value: unknown) {
   } catch {
     return Number.POSITIVE_INFINITY;
   }
+}
+
+export function normalizeFocusGuardExtensionQueuedCapture(
+  value: unknown,
+  now = Date.now()
+): FocusGuardExtensionQueuedCapture | null {
+  if (!isRecord(value)) return null;
+  const id = normalizeString(value.id, 160);
+  const text = normalizeString(
+    value.text,
+    FOCUS_GUARD_EXTENSION_MAX_CAPTURE_TEXT_LENGTH
+  );
+  const guardSessionId = normalizeString(value.guardSessionId, 160, true);
+  if (
+    !id ||
+    !text ||
+    guardSessionId === null ||
+    !isTimestamp(value.capturedAt) ||
+    value.capturedAt > now + 60_000 ||
+    now - value.capturedAt > FOCUS_GUARD_EXTENSION_CAPTURE_TTL_MS
+  ) {
+    return null;
+  }
+  return {
+    id,
+    text,
+    capturedAt: value.capturedAt,
+    ...(guardSessionId ? { guardSessionId } : {}),
+  };
 }
 
 function normalizeWebsiteRules(
@@ -308,6 +356,8 @@ const RESPONSE_TYPES = new Set<FocusGuardExtensionResponseType>([
   FOCUS_GUARD_EXTENSION_MESSAGES.eventBatch,
   FOCUS_GUARD_EXTENSION_MESSAGES.eventAckResponse,
   FOCUS_GUARD_EXTENSION_MESSAGES.configAck,
+  FOCUS_GUARD_EXTENSION_MESSAGES.captureBatch,
+  FOCUS_GUARD_EXTENSION_MESSAGES.captureAckResponse,
   FOCUS_GUARD_EXTENSION_MESSAGES.error,
 ]);
 
@@ -342,6 +392,19 @@ export function normalizeFocusGuardExtensionResponse(
       FOCUS_GUARD_EXTENSION_SNAPSHOT_SCHEMA_VERSION
   ) {
     return null;
+  }
+
+  if (value.type === FOCUS_GUARD_EXTENSION_MESSAGES.captureBatch) {
+    if (
+      !Array.isArray(value.payload.captures) ||
+      value.payload.captures.length >
+        FOCUS_GUARD_EXTENSION_MAX_CAPTURE_ITEMS ||
+      value.payload.captures.some(
+        (capture) => !normalizeFocusGuardExtensionQueuedCapture(capture)
+      )
+    ) {
+      return null;
+    }
   }
 
   return value as unknown as FocusGuardExtensionEnvelope<FocusGuardExtensionResponseType>;

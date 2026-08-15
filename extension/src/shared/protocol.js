@@ -2,13 +2,16 @@
   'use strict';
 
   const CHANNEL = 'focusflow-extension-bridge';
-  const PROTOCOL_VERSION = 3;
+  const PROTOCOL_VERSION = 4;
   const SNAPSHOT_SCHEMA_VERSION = 3;
-  const EXTENSION_VERSION = '0.3.1';
+  const EXTENSION_VERSION = '0.4.0';
   const SESSION_STORAGE_KEY = 'focusflow-active-protected-session-v3';
   const CONFIG_STORAGE_KEY = 'focusflow-selected-profile-config-v1';
   const MAX_ENVELOPE_BYTES = 32 * 1024;
   const MAX_RULES = 100;
+  const MAX_CAPTURE_ITEMS = 50;
+  const MAX_CAPTURE_TEXT_LENGTH = 300;
+  const CAPTURE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
   const ALLOWED_FOCUSFLOW_ORIGINS = new Set([
     'http://localhost:3000',
     'http://127.0.0.1:3000',
@@ -23,6 +26,8 @@
     EVENT_DRAIN: 'FOCUSFLOW_EVENT_DRAIN',
     EVENT_ACK: 'FOCUSFLOW_EVENT_ACK',
     CONFIG_SYNC: 'FOCUSFLOW_CONFIG_SYNC',
+    CAPTURE_DRAIN: 'FOCUSFLOW_CAPTURE_DRAIN',
+    CAPTURE_ACK: 'FOCUSFLOW_CAPTURE_ACK',
     READY: 'FOCUSFLOW_BRIDGE_READY',
     PONG: 'FOCUSFLOW_BRIDGE_PONG',
     SESSION_ACK: 'FOCUSFLOW_SESSION_ACK',
@@ -30,6 +35,8 @@
     EVENT_BATCH: 'FOCUSFLOW_EVENT_BATCH',
     EVENT_ACKNOWLEDGED: 'FOCUSFLOW_EVENT_ACKNOWLEDGED',
     CONFIG_ACK: 'FOCUSFLOW_CONFIG_ACK',
+    CAPTURE_BATCH: 'FOCUSFLOW_CAPTURE_BATCH',
+    CAPTURE_ACKNOWLEDGED: 'FOCUSFLOW_CAPTURE_ACKNOWLEDGED',
     ERROR: 'FOCUSFLOW_BRIDGE_ERROR',
   });
 
@@ -41,6 +48,8 @@
     MESSAGE_TYPES.EVENT_DRAIN,
     MESSAGE_TYPES.EVENT_ACK,
     MESSAGE_TYPES.CONFIG_SYNC,
+    MESSAGE_TYPES.CAPTURE_DRAIN,
+    MESSAGE_TYPES.CAPTURE_ACK,
   ]);
   const RESPONSE_TYPES = new Set([
     MESSAGE_TYPES.READY,
@@ -50,6 +59,8 @@
     MESSAGE_TYPES.EVENT_BATCH,
     MESSAGE_TYPES.EVENT_ACKNOWLEDGED,
     MESSAGE_TYPES.CONFIG_ACK,
+    MESSAGE_TYPES.CAPTURE_BATCH,
+    MESSAGE_TYPES.CAPTURE_ACKNOWLEDGED,
     MESSAGE_TYPES.ERROR,
   ]);
 
@@ -75,6 +86,25 @@
     } catch {
       return Number.POSITIVE_INFINITY;
     }
+  }
+
+  function normalizeQueuedCapture(value, now) {
+    if (!isRecord(value)) return null;
+    const id = normalizeString(value.id, 160, false);
+    const text = normalizeString(value.text, MAX_CAPTURE_TEXT_LENGTH, false);
+    const guardSessionId = normalizeString(value.guardSessionId, 160, true);
+    if (
+      !id || !text || guardSessionId === null ||
+      !isTimestamp(value.capturedAt) ||
+      value.capturedAt > now + 60_000 ||
+      now - value.capturedAt > CAPTURE_TTL_MS
+    ) return null;
+    return {
+      id,
+      text,
+      capturedAt: value.capturedAt,
+      ...(guardSessionId ? { guardSessionId } : {}),
+    };
   }
 
   function normalizeWebsiteRule(value) {
@@ -238,12 +268,26 @@
       if (pageVersion === null) return errorResult(raw, 'INVALID_PAYLOAD', 'Page version is invalid.');
       return { ok: true, envelope: { ...raw, payload: pageVersion ? { pageVersion } : {} } };
     }
-    if (raw.type === MESSAGE_TYPES.STATUS_REQUEST || raw.type === MESSAGE_TYPES.EVENT_DRAIN) return { ok: true, envelope: { ...raw, payload: {} } };
+    if (
+      raw.type === MESSAGE_TYPES.STATUS_REQUEST ||
+      raw.type === MESSAGE_TYPES.EVENT_DRAIN ||
+      raw.type === MESSAGE_TYPES.CAPTURE_DRAIN
+    ) return { ok: true, envelope: { ...raw, payload: {} } };
     if (raw.type === MESSAGE_TYPES.EVENT_ACK) {
       if (!Array.isArray(payload.eventIds) || payload.eventIds.length > 100) return errorResult(raw, 'INVALID_PAYLOAD', 'Event acknowledgment is invalid.');
       const eventIds = payload.eventIds.map((id) => normalizeString(id, 160, false));
       if (eventIds.some((id) => !id) || new Set(eventIds).size !== eventIds.length) return errorResult(raw, 'INVALID_PAYLOAD', 'Event acknowledgment IDs are invalid.');
       return { ok: true, envelope: { ...raw, payload: { eventIds } } };
+    }
+    if (raw.type === MESSAGE_TYPES.CAPTURE_ACK) {
+      if (!Array.isArray(payload.captureIds) || payload.captureIds.length > MAX_CAPTURE_ITEMS) {
+        return errorResult(raw, 'INVALID_PAYLOAD', 'Capture acknowledgment is invalid.');
+      }
+      const captureIds = payload.captureIds.map((id) => normalizeString(id, 160, false));
+      if (captureIds.some((id) => !id) || new Set(captureIds).size !== captureIds.length) {
+        return errorResult(raw, 'INVALID_PAYLOAD', 'Capture acknowledgment IDs are invalid.');
+      }
+      return { ok: true, envelope: { ...raw, payload: { captureIds } } };
     }
     if (raw.type === MESSAGE_TYPES.CONFIG_SYNC) {
       const normalizedConfig = normalizeProfileConfig(payload.config);
@@ -270,6 +314,15 @@
       payload.protocolVersion !== PROTOCOL_VERSION || payload.snapshotSchemaVersion !== SNAPSHOT_SCHEMA_VERSION) {
       return errorResult(raw, 'INVALID_PAYLOAD', 'Extension version response is invalid.');
     }
+    if (raw.type === MESSAGE_TYPES.CAPTURE_BATCH) {
+      if (!Array.isArray(payload.captures) || payload.captures.length > MAX_CAPTURE_ITEMS) {
+        return errorResult(raw, 'INVALID_PAYLOAD', 'Capture batch is invalid.');
+      }
+      const captures = payload.captures.map((item) => normalizeQueuedCapture(item, Date.now()));
+      if (captures.some((item) => !item)) {
+        return errorResult(raw, 'INVALID_PAYLOAD', 'Capture batch items are invalid.');
+      }
+    }
     return { ok: true, envelope: raw };
   }
 
@@ -280,8 +333,11 @@
 
   globalScope.FocusFlowBridgeProtocol = Object.freeze({
     CHANNEL, PROTOCOL_VERSION, SNAPSHOT_SCHEMA_VERSION, EXTENSION_VERSION,
-    SESSION_STORAGE_KEY, CONFIG_STORAGE_KEY, MAX_ENVELOPE_BYTES, MESSAGE_TYPES, createEnvelope,
+    SESSION_STORAGE_KEY, CONFIG_STORAGE_KEY, MAX_ENVELOPE_BYTES,
+    MAX_CAPTURE_ITEMS, MAX_CAPTURE_TEXT_LENGTH, CAPTURE_TTL_MS,
+    MESSAGE_TYPES, createEnvelope,
     createErrorEnvelope, normalizeSessionSnapshot, validatePageRequestEnvelope,
-    validateExtensionResponseEnvelope, normalizeProfileConfig, normalizeString, isRecord,
+    validateExtensionResponseEnvelope, normalizeProfileConfig,
+    normalizeQueuedCapture, normalizeString, isRecord,
   });
 })(globalThis);

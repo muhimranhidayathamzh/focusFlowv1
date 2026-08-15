@@ -1,5 +1,10 @@
 # Focus Guard — Session 3 Checkpoint
 
+> Post-checkpoint addendum: extension 0.4.0 adds browser-wide Quick Capture
+> through the `sidePanel` permission and protocol 4. Snapshot schema 3 and the
+> existing DNR permission boundary are unchanged. See
+> `GLOBAL_QUICK_CAPTURE.md`.
+
 Date: 2026-07-13
 Scope completed: Phase 7 communication proof, Phase 8 Website Blocking MVP, Phase 9 Guard Profiles and Rule Refinement.
 

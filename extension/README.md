@@ -1,6 +1,6 @@
-# FocusFlow Browser Guard — Phase 8+9 Final QA Guide
+# FocusFlow Browser Guard — Browser Guard + Quick Capture QA Guide
 
-This isolated Chromium Manifest V3 extension implements the versioned FocusFlow bridge, active-session DNR protection, intervention/bypass flow, dynamic profile permission UI, and local recovery. Phase 7 was manually accepted. Phase 8+9 manual acceptance is intentionally pending this combined checklist.
+This isolated Chromium Manifest V3 extension implements the versioned FocusFlow bridge, active-session DNR protection, intervention/bypass flow, dynamic profile permission UI, local recovery, and browser-wide Quick Capture.
 
 ## Build, install, and reload
 
@@ -12,19 +12,31 @@ npm run extension:check
 npm run verify:focus-guard-phase7
 npm run verify:focus-guard-phase8
 npm run verify:focus-guard-phase9
+npm run verify:focus-guard-quick-capture
 ```
 
-Load `extension/dist`, not `extension/src`. Next.js does not bundle the extension. After edits, rebuild, click **Reload** on the extension card, and reload FocusFlow so page/content/worker all use protocol v3.
+Load `extension/dist`, not `extension/src`. Next.js does not bundle the extension. After edits, rebuild, click **Reload** on the extension card, and reload FocusFlow so page/content/worker all use protocol v4.
 
 Chrome: open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select `extension/dist`. Edge uses the same process at `edge://extensions`. Open `https://focusflow-fawn-ten.vercel.app`, `http://localhost:3000`, or `http://127.0.0.1:3000` and confirm `Extension terhubung`.
 
 ## Permission model
 
-Required permissions are `storage`, `declarativeNetRequest`, and `alarms`. The manifest declares `http://*/*` and `https://*/*` only as optional host permissions so custom profiles can name domains. This declaration does not grant access automatically.
+Required permissions are `storage`, `declarativeNetRequest`, `alarms`, and `sidePanel`. The side-panel permission only hosts FocusFlow's own Quick Capture UI. The manifest declares `http://*/*` and `https://*/*` only as optional host permissions so custom profiles can name domains. This declaration does not grant access automatically.
 
 The toolbar popup lists the selected/active profile and concrete required origins. Only **Izinkan origin yang belum tersedia** may call `chrome.permissions.request`, from that explicit gesture. It also shows granted/missing state, active DNR count, bypass state, revoke, and **Bersihkan proteksi lokal**. Saving, selecting, syncing, or importing a profile never prompts, grants permission, starts Guard, or installs blocking rules.
 
 The extension never requests tabs, activeTab, history, webNavigation, webRequest, scripting, required `<all_urls>`, cookies, native messaging, notifications, screenshots, clipboard, browser-history, or page-content access.
+
+## Browser-wide Quick Capture
+
+- Press `Alt + Shift + D` from any active Chrome/Edge tab to open the FocusFlow side panel without navigating away.
+- The toolbar popup and blocked-site intervention page provide the same capture fallback.
+- `Ctrl + Enter` submits from the side panel or popup.
+- Captures are written to `chrome.storage.local` under `focusflow-distraction-capture-queue-v1`, capped at 50 items with a seven-day TTL.
+- When a FocusFlow page is connected, it drains the queue into the existing Distraction Inbox and acknowledges stable IDs. The extension removes only acknowledged items, so retries do not duplicate Inbox entries.
+- A live protected session contributes only its Guard session ID. Without one, the item enters the general Inbox.
+- The queue stores only stable ID, text up to 300 characters, capture timestamp, and optional Guard session ID. It never stores current URL, tab title, page content, browsing history, clipboard, screenshots, or keystrokes.
+- The shortcut can be changed at `chrome://extensions/shortcuts` or `edge://extensions/shortcuts`.
 
 ## Rule syntax and precedence
 
@@ -47,11 +59,17 @@ focusflow-bypass-challenge-v1
 focusflow-pending-events-v1
 ```
 
+Persistent Quick Capture queue:
+
+```text
+focusflow-distraction-capture-queue-v1 (chrome.storage.local)
+```
+
 Use `chrome.storage.session.get(null)` for inspection. Normal pause/stop/completion/disable/expiry/recovery clears FocusFlow DNR state. Website rules use IDs `100000–199999`; bypass rules use `200000–299999`; unrelated DNR IDs are preserved.
 
 ## Privacy and import/export
 
-Session/config sync contains only current profile identity, protection/bypass settings, normalized website rules, derived origins, target/timing/status metadata needed for active protection. It excludes full tasks, intention, history, distraction text, ratings, analytics, attempted full URL, browser history, DOM/page content, screenshots, clipboard, and telemetry.
+Session/config sync contains only current profile identity, protection/bypass settings, normalized website rules, derived origins, target/timing/status metadata needed for active protection. It still excludes full tasks, intention, history, distraction text, ratings, analytics, attempted full URL, browser history, DOM/page content, screenshots, clipboard, and telemetry. Distraction text crosses only the separate bounded capture drain/ack channel after the user explicitly saves it.
 
 Export contains only custom profiles and selected/default profile preference. Import requires a valid versioned file/paste preview. Merge is default; replacing custom profiles requires explicit confirmation. Built-ins cannot be overwritten. Import never exports/imports extension permissions and never starts protection.
 
@@ -60,7 +78,7 @@ Export contains only custom profiles and selected/default profile preference. Im
 Do not mark final acceptance complete until all applicable steps are observed in Chrome or Edge:
 
 1. Extension absent: FocusFlow reports disconnected; normal and Light timers work.
-2. Load/reload `extension/dist`: protocol v3 connects without console loops.
+2. Load/reload `extension/dist`: protocol v4 and extension `0.4.0` connect without console loops.
 3. Open Guard Profile Settings; verify Light and Browser Guard are immutable and Light remains default unless explicitly changed.
 4. Duplicate each built-in; rename/edit/delete only the custom copy.
 5. Create a Medium custom profile, edit bypass delay/duration/reason, reorder rules, save, and make it default.
@@ -89,6 +107,11 @@ Do not mark final acceptance complete until all applicable steps are observed in
 28. Change a stored profile during an active session; the active session snapshot/history remains unchanged until a new session.
 29. Reload page/extension, deny/grant/revoke origins, and repeat active/pause/resume/clear transitions without error floods.
 30. Confirm page, popup, intervention, and service-worker consoles are clean.
+31. From another browser tab, press `Alt + Shift + D`; verify the side panel opens without navigation and the timer continues.
+32. Save one capture with an active session and one without; verify both arrive once in the Inbox and the session item remains associated with its Guard session.
+33. Close FocusFlow, save from the side panel, reopen FocusFlow, and verify queued delivery plus removal after acknowledgment.
+34. Retry/double-submit the same stable queued item through the deterministic harness; verify no duplicate Inbox entry.
+35. Verify empty/301-character input is rejected and inspect local queue fields for absence of URL, title, page content, clipboard, or history.
 
 Record browser/version, origins tested, and any skipped step. Code/harness success is not end-to-end acceptance.
 

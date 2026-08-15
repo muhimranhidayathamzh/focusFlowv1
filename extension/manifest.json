@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "FocusFlow Browser Guard",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Session-scoped website protection for FocusFlow Browser Guard.",
-  "permissions": ["storage", "declarativeNetRequest", "alarms"],
+  "permissions": ["storage", "declarativeNetRequest", "alarms", "sidePanel"],
   "optional_host_permissions": [
     "http://*/*",
     "https://*/*"
@@ -11,6 +11,17 @@
   "action": {
     "default_title": "FocusFlow Browser Guard",
     "default_popup": "src/popup/index.html"
+  },
+  "side_panel": {
+    "default_path": "src/sidepanel/index.html"
+  },
+  "commands": {
+    "quick-capture": {
+      "suggested_key": {
+        "default": "Alt+Shift+D"
+      },
+      "description": "Buka Quick Capture FocusFlow"
+    }
   },
   "background": {
     "service_worker": "src/background/service-worker.js"

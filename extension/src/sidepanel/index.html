@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FocusFlow Quick Capture</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <main>
+    <p class="eyebrow">FocusFlow</p>
+    <h1>Simpan untuk nanti</h1>
+    <p class="copy">Tangkap pikiran tanpa meninggalkan tab atau menghentikan timer.</p>
+
+    <section aria-labelledby="capture-title">
+      <h2 id="capture-title">Quick Capture</h2>
+      <p id="session-status" class="muted">Memeriksa sesi Focus…</p>
+      <form id="capture-form">
+        <label for="capture-text">Apa yang mengganggu pikiranmu?</label>
+        <textarea id="capture-text" maxlength="300" rows="5" required autofocus></textarea>
+        <div class="form-meta">
+          <span id="character-count">0/300</span>
+          <span>Ctrl + Enter</span>
+        </div>
+        <button id="capture-submit" type="submit">Simpan ke Inbox</button>
+      </form>
+      <p id="capture-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <div class="queue-row">
+      <span>Menunggu sinkronisasi</span>
+      <strong id="pending-count">0</strong>
+    </div>
+    <p class="shortcut">Shortcut: <kbd id="shortcut">Alt + Shift + D</kbd></p>
+    <p class="privacy">Hanya teks, waktu capture, ID item, dan ID sesi bila tersedia yang disimpan. URL, judul tab, dan isi halaman tidak direkam.</p>
+  </main>
+  <script src="sidepanel.js"></script>
+</body>
+</html>

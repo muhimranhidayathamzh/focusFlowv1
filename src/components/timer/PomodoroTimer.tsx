@@ -19,8 +19,16 @@ import { useFocusSessionReview } from '@/hooks/useFocusSessionReview';
 import SessionReview from '@/components/guard/SessionReview';
 import { useFocusGuardExtensionBridge } from '@/hooks/useFocusGuardExtensionBridge';
 import GuardProfileSettings from '@/components/guard/GuardProfileSettings';
+import { useAmbientSoundTimerContext } from '@/components/ambient/AmbientSoundProvider';
+import { useEffect } from 'react';
 
 export default function PomodoroTimer() {
+  const {
+    autoPlayOnFocus,
+    isReady: isAmbientSoundReady,
+    playSelectedSound,
+    stopSound,
+  } = useAmbientSoundTimerContext();
   const [completedTarget, setCompletedTarget] = useState<FocusTarget | null>(null);
   const [isCaptureSuppressingAttention, setIsCaptureSuppressingAttention] =
     useState(false);
@@ -106,6 +114,24 @@ export default function PomodoroTimer() {
     selectedPresetId,
     applyPreset,
   } = timer;
+
+  useEffect(() => {
+    if (!isAmbientSoundReady || !autoPlayOnFocus) return;
+
+    if (mode === 'focus' && isActive) {
+      playSelectedSound();
+      return;
+    }
+
+    stopSound();
+  }, [
+    autoPlayOnFocus,
+    isActive,
+    isAmbientSoundReady,
+    mode,
+    playSelectedSound,
+    stopSound,
+  ]);
 
   const selectedPresetLabel = useMemo(() => {
     if (selectedPresetId === 'custom') return 'Custom timer';

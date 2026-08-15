@@ -1,5 +1,10 @@
 # Phase 9 — Guard Profiles and Rule Refinement
 
+> Quick Capture addendum (extension 0.4.0): `sidePanel` is now an additional
+> required permission solely for the extension-owned capture UI. No `tabs`,
+> `activeTab`, history, navigation, scripting, notification, or required host
+> permission was added. See `GLOBAL_QUICK_CAPTURE.md`.
+
 Status: code-complete; combined Phase 8+9 unpacked-extension QA is intentionally deferred.
 
 ## Scope and permission boundary
