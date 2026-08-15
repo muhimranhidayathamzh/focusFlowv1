@@ -19,6 +19,8 @@
     protocol.MESSAGE_TYPES.EVENT_DRAIN,
     protocol.MESSAGE_TYPES.EVENT_ACK,
     protocol.MESSAGE_TYPES.CONFIG_SYNC,
+    protocol.MESSAGE_TYPES.CAPTURE_DRAIN,
+    protocol.MESSAGE_TYPES.CAPTURE_ACK,
   ]);
 
   function createRequestId(prefix) {

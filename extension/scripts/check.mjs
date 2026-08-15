@@ -25,7 +25,12 @@ const forbiddenPermissions = new Set([
 ]);
 
 assert.equal(manifest.manifest_version, 3);
-assert.deepEqual(manifest.permissions, ['storage', 'declarativeNetRequest', 'alarms']);
+assert.deepEqual(manifest.permissions, [
+  'storage',
+  'declarativeNetRequest',
+  'alarms',
+  'sidePanel',
+]);
 assert.equal(manifest.host_permissions, undefined);
 assert.deepEqual(manifest.optional_host_permissions, [
   'http://*/*',
@@ -43,6 +48,15 @@ for (const permission of forbiddenPermissions) {
 
 assert.equal(manifestText.includes('<all_urls>'), false);
 assert.equal(manifest.action.default_popup, 'src/popup/index.html');
+assert.equal(manifest.side_panel.default_path, 'src/sidepanel/index.html');
+assert.equal(
+  manifest.commands['quick-capture'].suggested_key.default,
+  'Alt+Shift+D'
+);
+assert.equal(
+  manifest.commands['quick-capture'].description,
+  'Buka Quick Capture FocusFlow'
+);
 assert.deepEqual(manifest.web_accessible_resources[0].matches, [
   'http://*/*',
   'https://*/*',
@@ -83,4 +97,4 @@ assert.equal(
   manifest.version
 );
 
-console.log('Extension check passed: MV3 minimum permissions, exact FocusFlow app origins, optional HTTP/HTTPS rule permissions, and all scripts parse.');
+console.log('Extension check passed: MV3 scoped permissions including sidePanel, exact FocusFlow app origins, optional HTTP/HTTPS rule permissions, Quick Capture command, and all scripts parse.');

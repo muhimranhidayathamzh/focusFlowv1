@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>FocusFlow Browser Guard</title><link rel="stylesheet" href="popup.css"></head>
 <body><main><p class="eyebrow">FocusFlow</p><h1>Browser Guard</h1><p class="copy">Izin diminta hanya untuk origin yang dibutuhkan profile terpilih. Menyimpan profile tidak mengaktifkan blocking.</p>
+<section aria-labelledby="quick-capture-title"><h2 id="quick-capture-title">Quick Capture</h2><p id="capture-context" class="muted">Memeriksa sesi Focus…</p><form id="capture-form"><label for="capture-text">Simpan untuk nanti</label><textarea id="capture-text" maxlength="300" rows="3" required></textarea><p class="capture-meta"><span id="capture-count">0/300</span><span><span id="pending-captures">0</span> menunggu sync</span></p><button id="capture-submit" type="submit">Simpan ke Inbox</button></form><p id="capture-status" class="capture-status" role="status"></p></section>
 <section><h2>Profile</h2><p id="selected-profile">Belum tersinkron</p><p id="active-profile" class="muted">Tidak ada sesi aktif</p></section>
 <section aria-labelledby="origins-title"><h2 id="origins-title">Required origins</h2><ul id="origins"><li>Belum ada origin.</li></ul><p id="status" role="status">Memeriksa status…</p></section>
 <div class="actions"><button id="grant" type="button">Izinkan origin yang belum tersedia</button><button id="revoke" class="secondary" type="button">Cabut izin profile</button></div>

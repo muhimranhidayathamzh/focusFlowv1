@@ -3,6 +3,7 @@
 importScripts(
   '../shared/protocol.js',
   './event-queue.js',
+  './capture-queue.js',
   './browser-guard.js',
   './guard-engine.js',
   './session-store.js'
@@ -11,6 +12,7 @@ importScripts(
 const protocol = globalThis.FocusFlowBridgeProtocol;
 const eventQueueModule = globalThis.FocusFlowEventQueue;
 const engineModule = globalThis.FocusFlowGuardEngine;
+const captureQueueModule = globalThis.FocusFlowCaptureQueue;
 
 function sessionValue(key) {
   return {
@@ -20,10 +22,21 @@ function sessionValue(key) {
   };
 }
 
+function localValue(key) {
+  return {
+    get: () => chrome.storage.local.get(key).then((result) => result[key] ?? null),
+    set: (value) => chrome.storage.local.set({ [key]: value }),
+    remove: () => chrome.storage.local.remove(key),
+  };
+}
+
 const snapshotStorage = sessionValue(protocol.SESSION_STORAGE_KEY);
 const configStorage = sessionValue(protocol.CONFIG_STORAGE_KEY);
 const eventQueue = eventQueueModule.createEventQueue(
   sessionValue('focusflow-pending-events-v1')
+);
+const captureQueue = captureQueueModule.createCaptureQueue(
+  localValue('focusflow-distraction-capture-queue-v1')
 );
 const engine = engineModule.createGuardEngine({
   snapshotStorage,
@@ -43,6 +56,7 @@ const engine = engineModule.createGuardEngine({
   },
   runtimeUrl: (path) => chrome.runtime.getURL(path),
   eventQueue,
+  captureQueue,
 });
 
 const handlePageMessage = globalThis.FocusFlowSessionStore.createMessageHandler({
@@ -73,8 +87,8 @@ async function handleInternalMessage(message) {
     }
     if (message.internalType === 'FOCUSFLOW_POPUP_STATUS') {
       const config = await configStorage.get();
-      const snapshot = await engine.getSnapshot();
       const status = await engine.reconcile();
+      const snapshot = await engine.getSnapshot();
       const origins = Array.isArray(config?.requiredOrigins) ? config.requiredOrigins : [];
       const permissionStates = [];
       for (const origin of origins) {
@@ -84,7 +98,53 @@ async function handleInternalMessage(message) {
         ok: true, config, activeProfile: snapshot?.profile || null, status,
         permissionStates,
         activeBypassCount: status.browserGuardState === 'bypass-active' ? 1 : 0,
+        capture: {
+          pendingCount: await captureQueue.count(),
+          sessionActive: Boolean(snapshot),
+          targetLabel: snapshot?.targetLabel || null,
+        },
       };
+    }
+    if (message.internalType === 'FOCUSFLOW_CAPTURE_STATUS') {
+      await engine.reconcile();
+      const snapshot = await engine.getSnapshot();
+      const commands = await chrome.commands.getAll();
+      const command = commands.find((item) => item.name === 'quick-capture');
+      return {
+        ok: true,
+        pendingCount: await captureQueue.count(),
+        sessionActive: Boolean(snapshot),
+        targetLabel: snapshot?.targetLabel || null,
+        shortcut: command?.shortcut || null,
+      };
+    }
+    if (message.internalType === 'FOCUSFLOW_CAPTURE_ADD') {
+      const text = protocol.normalizeString(
+        message.text,
+        protocol.MAX_CAPTURE_TEXT_LENGTH,
+        false
+      );
+      if (!text) return { ok: false, error: 'Tulis distraksi maksimal 300 karakter.' };
+      await engine.reconcile();
+      const snapshot = await engine.getSnapshot();
+      const capturedAt = Date.now();
+      const requestedId = protocol.normalizeString(message.captureId, 160, true);
+      if (requestedId === null) {
+        return { ok: false, error: 'Identitas capture tidak valid.' };
+      }
+      const id = requestedId ||
+        `extension-distraction-${crypto.randomUUID()}`.slice(0, 160);
+      const capture = await captureQueue.enqueue({
+        id,
+        text,
+        capturedAt,
+        ...(snapshot?.guardSessionId
+          ? { guardSessionId: snapshot.guardSessionId }
+          : {}),
+      });
+      return capture
+        ? { ok: true, capture, pendingCount: await captureQueue.count() }
+        : { ok: false, error: 'Distraksi tidak dapat disimpan.' };
     }
     if (message.internalType === 'FOCUSFLOW_RECOVERY_CLEAR') {
       await snapshotStorage.remove();
@@ -104,6 +164,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     : handleInternalMessage(message);
   void task.then(sendResponse);
   return true;
+});
+
+chrome.commands.onCommand.addListener((command, tab) => {
+  if (command !== 'quick-capture' || !tab?.windowId) return;
+  void chrome.sidePanel.open({ windowId: tab.windowId }).catch(() => undefined);
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {

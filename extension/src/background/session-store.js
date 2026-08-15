@@ -14,7 +14,15 @@
   function snapshotsEqual(left, right) { return JSON.stringify(left) === JSON.stringify(right); }
 
   function createMessageHandler(options) {
-    const { storage, configStorage, engine, eventQueue, now, extensionVersion = protocol.EXTENSION_VERSION } = options;
+    const {
+      storage,
+      configStorage,
+      engine,
+      eventQueue,
+      captureQueue = { drain: async () => [], ack: async () => 0 },
+      now,
+      extensionVersion = protocol.EXTENSION_VERSION,
+    } = options;
 
     async function getLiveSnapshot() {
       const raw = await storage.get();
@@ -62,6 +70,28 @@
           return protocol.createEnvelope(protocol.MESSAGE_TYPES.EVENT_ACKNOWLEDGED, request.requestId, {
             ...(await statusPayload(snapshot)), acknowledgedCount,
           });
+        }
+        if (request.type === protocol.MESSAGE_TYPES.CAPTURE_DRAIN) {
+          const snapshot = await getLiveSnapshot();
+          return protocol.createEnvelope(
+            protocol.MESSAGE_TYPES.CAPTURE_BATCH,
+            request.requestId,
+            {
+              ...(await statusPayload(snapshot)),
+              captures: await captureQueue.drain(),
+            }
+          );
+        }
+        if (request.type === protocol.MESSAGE_TYPES.CAPTURE_ACK) {
+          const snapshot = await getLiveSnapshot();
+          const acknowledgedCount = await captureQueue.ack(
+            request.payload.captureIds
+          );
+          return protocol.createEnvelope(
+            protocol.MESSAGE_TYPES.CAPTURE_ACKNOWLEDGED,
+            request.requestId,
+            { ...(await statusPayload(snapshot)), acknowledgedCount }
+          );
         }
         if (request.type === protocol.MESSAGE_TYPES.CONFIG_SYNC) {
           const compiler = globalScope.FocusFlowBrowserGuard;

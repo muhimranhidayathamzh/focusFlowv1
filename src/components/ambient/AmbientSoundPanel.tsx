@@ -1,6 +1,6 @@
 'use client';
 
-import { useAmbientSound } from '@/hooks/useAmbientSound';
+import { useAmbientSoundContext } from './AmbientSoundProvider';
 import { AMBIENT_SOUND_GROUPS, AMBIENT_SOUNDS } from '@/types/ambient';
 import { ChevronDown, Headphones, Play, Square, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -15,14 +15,27 @@ function getSoundInitial(label: string) {
 }
 
 export default function AmbientSoundPanel() {
-  const { currentSound, volume, isReady, playSound, stopSound, setVolume } =
-    useAmbientSound();
+  const {
+    currentSound,
+    selectedSound,
+    volume,
+    autoPlayOnFocus,
+    isReady,
+    playSound,
+    playSelectedSound,
+    stopSound,
+    setVolume,
+    setAutoPlayOnFocus,
+  } = useAmbientSoundContext();
 
   if (!isReady) return null;
 
   const isPlaying = currentSound !== null;
   const currentSoundConfig = AMBIENT_SOUNDS.find(
     (sound) => sound.id === currentSound
+  );
+  const selectedSoundConfig = AMBIENT_SOUNDS.find(
+    (sound) => sound.id === selectedSound
   );
 
   return (
@@ -48,21 +61,54 @@ export default function AmbientSoundPanel() {
               Focus Sound
             </h2>
             <p className="text-xs text-zinc-500">
-              {currentSoundConfig?.label ?? 'Tidak ada suara diputar'}
+              {currentSoundConfig?.label ?? `Siap: ${selectedSoundConfig?.label ?? 'Rain'}`}
             </p>
           </div>
         </div>
         <button
-          onClick={isPlaying ? stopSound : () => playSound('rain')}
+          onClick={isPlaying ? stopSound : playSelectedSound}
           className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-xs font-medium text-zinc-200 transition-colors hover:bg-white/[0.08]"
           id="ambient-stop-btn"
-          aria-label={isPlaying ? 'Hentikan focus sound' : 'Putar suara Rain'}
-          title={isPlaying ? 'Hentikan focus sound' : 'Putar Rain'}
+          aria-label={isPlaying ? 'Hentikan focus sound' : `Putar suara ${selectedSoundConfig?.label ?? 'Rain'}`}
+          title={isPlaying ? 'Hentikan focus sound' : `Putar ${selectedSoundConfig?.label ?? 'Rain'}`}
         >
           {isPlaying ? <Square size={13} aria-hidden="true" /> : <Play size={14} aria-hidden="true" />}
           {isPlaying ? 'Stop' : 'Putar'}
         </button>
       </div>
+
+      <button
+        type="button"
+        role="switch"
+        aria-checked={autoPlayOnFocus}
+        onClick={() => setAutoPlayOnFocus(!autoPlayOnFocus)}
+        className="mt-3 flex min-h-10 w-full items-center justify-between gap-4 rounded-xl border border-white/5 px-3 text-left transition-colors hover:bg-white/[0.035]"
+      >
+        <span>
+          <span className="block text-xs font-medium text-zinc-300">
+            Putar otomatis saat Focus dimulai
+          </span>
+          <span className="mt-0.5 block text-[11px] text-zinc-500">
+            Berhenti saat pause atau masuk waktu istirahat.
+          </span>
+        </span>
+        <span
+          className={cn(
+            'relative h-5 w-9 flex-shrink-0 rounded-full border transition-colors',
+            autoPlayOnFocus
+              ? 'border-indigo-400/40 bg-indigo-500/35'
+              : 'border-white/10 bg-white/[0.06]'
+          )}
+          aria-hidden="true"
+        >
+          <span
+            className={cn(
+              'absolute left-0.5 top-0.5 h-3.5 w-3.5 rounded-full bg-white transition-transform',
+              autoPlayOnFocus ? 'translate-x-4' : 'translate-x-0'
+            )}
+          />
+        </span>
+      </button>
 
       <div className="flex items-center gap-3 rounded-xl bg-black/15 px-3 py-3">
         <button
@@ -132,6 +178,7 @@ export default function AmbientSoundPanel() {
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {sounds.map((sound) => {
                     const isActive = currentSound === sound.id;
+                    const isSelected = selectedSound === sound.id;
                     return (
                       <button
                         key={sound.id}
@@ -140,11 +187,13 @@ export default function AmbientSoundPanel() {
                           'min-h-16 rounded-xl border p-3 text-left transition-colors',
                           isActive
                             ? 'border-indigo-400/30 bg-indigo-500/10 text-indigo-100'
+                            : isSelected
+                              ? 'border-white/15 bg-white/[0.045] text-zinc-100'
                             : 'border-white/5 bg-white/[0.02] text-zinc-300 hover:bg-white/[0.05]'
                         )}
                         id={`ambient-${sound.id}`}
-                        aria-pressed={isActive}
-                        title={`${isActive ? 'Hentikan' : 'Putar'} ${sound.label}`}
+                        aria-pressed={isSelected}
+                        title={`${isActive ? 'Hentikan' : 'Pilih dan putar'} ${sound.label}`}
                       >
                         <span className="flex items-center gap-2 text-xs font-semibold">
                           <span className="flex h-6 w-6 items-center justify-center rounded-md bg-black/20 text-[10px]">

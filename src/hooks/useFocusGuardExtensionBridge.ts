@@ -12,8 +12,12 @@ import {
   createSanitizedFocusGuardProfileConfig,
   createSanitizedFocusGuardSnapshot,
   normalizeFocusGuardExtensionResponse,
+  normalizeFocusGuardExtensionQueuedCapture,
 } from '@/lib/focusGuardExtensionBridge';
-import { addFocusInterruption } from '@/lib/focusGuardPersistence';
+import {
+  addDistractionItem,
+  addFocusInterruption,
+} from '@/lib/focusGuardPersistence';
 import {
   FOCUS_GUARD_EXTENSION_CONNECTION_CHECK_MS,
   FOCUS_GUARD_EXTENSION_MAX_PENDING_REQUESTS,
@@ -83,6 +87,7 @@ export function useFocusGuardExtensionBridge(options: Options) {
   const seenResponsesRef = useRef<string[]>([]);
   const pingInFlightRef = useRef(false);
   const eventDrainInFlightRef = useRef(false);
+  const captureDrainInFlightRef = useRef(false);
   const lastSyncedSessionIdRef = useRef<string | null>(null);
   const lastAcknowledgedAtRef = useRef<number | null>(null);
   optionsRef.current = options;
@@ -450,20 +455,58 @@ export function useFocusGuardExtensionBridge(options: Options) {
     }
   }, [acceptCompatibleResponse, sendRequest]);
 
+  const drainCaptures = useCallback(async () => {
+    if (captureDrainInFlightRef.current) return;
+    captureDrainInFlightRef.current = true;
+    try {
+      const response = await sendRequest(
+        FOCUS_GUARD_EXTENSION_MESSAGES.captureDrain,
+        {}
+      );
+      if (!acceptCompatibleResponse(response)) return;
+      const captures = Array.isArray(response.payload.captures)
+        ? response.payload.captures
+        : [];
+      const acknowledgedIds: string[] = [];
+      for (const candidate of captures) {
+        const capture = normalizeFocusGuardExtensionQueuedCapture(candidate);
+        if (!capture) continue;
+        const stored = addDistractionItem(capture);
+        if (stored) acknowledgedIds.push(capture.id);
+      }
+      if (acknowledgedIds.length > 0) {
+        const ack = await sendRequest(
+          FOCUS_GUARD_EXTENSION_MESSAGES.captureAckRequest,
+          { captureIds: acknowledgedIds }
+        );
+        acceptCompatibleResponse(ack);
+      }
+    } catch {
+      // Capture delivery retries on the next drain without affecting the timer.
+    } finally {
+      captureDrainInFlightRef.current = false;
+    }
+  }, [acceptCompatibleResponse, sendRequest]);
+
   useEffect(() => {
     if (connectionState !== 'connected' || !options.isReady) return;
     void drainEvents();
+    void drainCaptures();
     const drainIntervalMs = shouldDrainEventsFrequently
       ? FOCUS_GUARD_EXTENSION_HEARTBEAT_MS
       : FOCUS_GUARD_EXTENSION_IDLE_EVENT_DRAIN_MS;
     const intervalId = setInterval(
-      () => void drainEvents(),
+      () => {
+        void drainEvents();
+        void drainCaptures();
+      },
       drainIntervalMs
     );
     return () => clearInterval(intervalId);
   }, [
     connectionState,
     drainEvents,
+    drainCaptures,
     options.isReady,
     shouldDrainEventsFrequently,
   ]);

@@ -5,13 +5,14 @@ async function source(path) {
   return readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 }
 
-const [bridgeHook, liveness, bridgeContract, persistence, profileConfig, eventQueue, sessions, tasks] = await Promise.all([
+const [bridgeHook, liveness, bridgeContract, persistence, profileConfig, eventQueue, captureQueue, sessions, tasks] = await Promise.all([
   source('src/hooks/useFocusGuardExtensionBridge.ts'),
   source('src/lib/focusGuardExtensionLiveness.ts'),
   source('src/lib/focusGuardExtensionBridge.ts'),
   source('src/lib/focusGuardPersistence.ts'),
   source('src/lib/focusGuardProfileConfig.ts'),
   source('extension/src/background/event-queue.js'),
+  source('extension/src/background/capture-queue.js'),
   source('src/hooks/useFocusSessions.ts'),
   source('src/hooks/useTasks.ts'),
 ]);
@@ -19,12 +20,19 @@ const [bridgeHook, liveness, bridgeContract, persistence, profileConfig, eventQu
 assert.match(liveness, /MAX_PENDING_REQUESTS = 8/);
 assert.match(bridgeHook, /pendingRef\.current\.size\s*>=\s*FOCUS_GUARD_EXTENSION_MAX_PENDING_REQUESTS/);
 assert.match(bridgeHook, /eventDrainInFlightRef\.current/);
+assert.match(bridgeHook, /captureDrainInFlightRef\.current/);
 assert.match(bridgeContract, /IDLE_EVENT_DRAIN_MS = 60_000/);
 assert.match(bridgeHook, /shouldDrainEventsFrequently/);
 
 assert.match(eventQueue, /MAX_EVENTS = 100/);
 assert.match(eventQueue, /EVENT_TTL_MS = 24 \* 60 \* 60 \* 1000/);
 assert.match(eventQueue, /slice\(-MAX_EVENTS\)/);
+
+assert.match(bridgeContract, /MAX_CAPTURE_ITEMS = 50/);
+assert.match(bridgeContract, /MAX_CAPTURE_TEXT_LENGTH = 300/);
+assert.match(bridgeContract, /CAPTURE_TTL_MS =\s*7 \* 24 \* 60 \* 60 \* 1000/);
+assert.match(captureQueue, /slice\(-protocol\.MAX_CAPTURE_ITEMS\)/);
+assert.match(captureQueue, /let mutationChain = Promise\.resolve\(\)/);
 
 assert.match(persistence, /MAX_HISTORY_ITEMS = 200/);
 assert.match(persistence, /MAX_INTERRUPTION_ITEMS = 1_000/);
@@ -47,4 +55,4 @@ assert.match(tasks, /MAX_TASK_STEPS = 100/);
 assert.match(tasks, /MAX_TASK_TEXT_LENGTH = 300/);
 assert.match(tasks, /MAX_TASK_STORAGE_CHARS = 1_000_000/);
 
-console.log('FocusFlow resource bounds passed: pending requests, polling cadence, extension queue TTL/cap, Guard storage budget/history compaction, import size, focus-session retention, and task limits.');
+console.log('FocusFlow resource bounds passed: pending requests, polling cadence, event/capture queue TTL and caps, serialized capture writes, Guard storage budget/history compaction, import size, focus-session retention, and task limits.');

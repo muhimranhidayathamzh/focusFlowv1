@@ -1,5 +1,10 @@
 # Phase 7 — Browser Extension Communication Proof
 
+> Quick Capture addendum (extension 0.4.0): bridge protocol is now `4`
+> while snapshot schema remains `3`. A separate bounded capture drain/ack
+> channel is documented in `GLOBAL_QUICK_CAPTURE.md`; session/config snapshots
+> remain free of distraction text.
+
 > Production-origin addendum (extension 0.3.1): the exact origin
 > `https://focusflow-fawn-ten.vercel.app` is allowlisted alongside the two
 > original development origins. Protocol and snapshot schema remain version 3.

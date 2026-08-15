@@ -301,7 +301,7 @@ const handler = sessionStore.createMessageHandler({
   },
   eventQueue: { async drain() { return []; }, async ack() { return 0; } },
   now: () => now,
-  extensionVersion: '0.3.1',
+  extensionVersion: protocol.EXTENSION_VERSION,
 });
 const request = (type, payload = {}, requestId = `request-${type}`) =>
   protocol.createEnvelope(type, requestId, payload, now);
@@ -330,7 +330,7 @@ const restartedHandler = sessionStore.createMessageHandler({
   },
   eventQueue: { async drain() { return []; }, async ack() { return 0; } },
   now: () => now,
-  extensionVersion: '0.3.1',
+  extensionVersion: protocol.EXTENSION_VERSION,
 });
 const statusAfterWorkerRestart = await restartedHandler(
   request(protocol.MESSAGE_TYPES.STATUS_REQUEST, {}, 'worker-restart')
